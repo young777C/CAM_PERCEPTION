@@ -2,22 +2,23 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from perception_stack.common.types import SemanticObject
+
 
 class Publisher:
     """
     semantic 输出 + status 输出
     Demo阶段：写到 logs/ 里，后续可替换为 ROS2 发布/自研总线
     """
-    def __init__(self, out_dir: str = "/workspace/perception_stack/logs"):
+    def __init__(self, out_dir: Optional[str] = None):
+        # 优先：显式参数 > 环境变量 > 默认(当前工作目录/logs)
         self.out_dir = (
             out_dir
             or os.getenv("PERCEPTION_OUT_DIR")
             or os.path.join(os.getcwd(), "logs")
         )
         os.makedirs(self.out_dir, exist_ok=True)
-        
 
     def publish(self, stamp_ms: int, objects: List[SemanticObject], status: Dict[str, Any]) -> str:
         payload = {
