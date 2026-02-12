@@ -25,5 +25,7 @@ jobs:
           pip install numpy opencv-python-headless
 
       - name: Run smoke test
+        env:
+          PERCEPTION_OUT_DIR: ${{ github.workspace }}/logs_ci
         run: |
           PYTHONPATH=src python -m perception_stack.main --ci_mode

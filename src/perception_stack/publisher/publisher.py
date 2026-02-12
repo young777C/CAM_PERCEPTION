@@ -11,8 +11,13 @@ class Publisher:
     Demo阶段：写到 logs/ 里，后续可替换为 ROS2 发布/自研总线
     """
     def __init__(self, out_dir: str = "/workspace/perception_stack/logs"):
-        self.out_dir = out_dir
+        self.out_dir = (
+            out_dir
+            or os.getenv("PERCEPTION_OUT_DIR")
+            or os.path.join(os.getcwd(), "logs")
+        )
         os.makedirs(self.out_dir, exist_ok=True)
+        
 
     def publish(self, stamp_ms: int, objects: List[SemanticObject], status: Dict[str, Any]) -> str:
         payload = {
