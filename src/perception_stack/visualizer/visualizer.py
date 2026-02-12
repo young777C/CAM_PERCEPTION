@@ -18,7 +18,7 @@ class Visualizer:
             or os.path.join(os.getcwd(), "logs")
         )
         self.out_dir = os.path.join(base, "overlay")
-        os.makedirs(self.out_dir, exist_ok=Tru
+        os.makedirs(self.out_dir, exist_ok=True)
 
     def draw(self, frame: CameraFrame, objects: List[SemanticObject], dt_ms: int) -> str:
         img = frame.image_bgr.copy()
