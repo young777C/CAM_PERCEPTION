@@ -62,7 +62,7 @@ git checkout main
 git pull
 git checkout -b feat/tl-detector
 ```
-2.2 开发完成后
+## 2.2 开发完成后
 	•	本地运行：
 	•	run_replay.sh
 	•	确认 pipeline 可跑通
@@ -92,7 +92,47 @@ git checkout -b feat/tl-detector
 [CORE] refactor projector ROI
 [FIX] fix timestamp alignment bug
 
-
+## 3.2 完整PR流程
+**step 0： 保证主线最新**
+```
+git checkout main
+git pull
+```
+**step 1: 创建功能分支**
+⚠️不要再main上开发，输入以下命令可以查看当前所在分支
+```git branch --show-current```
+进入功能分支
+```git checkout -b feat/(对应功能)```
+命名规范示例：
+```
+feat/tl-detector
+feat/ts-small-object
+feat/core-roi-refactor
+fix/sync-timestamp```
+**step 2：本地开发**
+修改代码后：
+```git add .
+git commit -m "feat(tl): add red light detection"```
+⚠️请务必按照规范commit，便于项目维护，可以coding过程中进行多次commit
+**step 3： 推送到远程**
+```git push origin feat/tl-detector```
+**step 4: 在GitHub上发起Pull Request**
+在 GitHub 页面：
+	•	base 分支：main
+	•	compare 分支：feat/tl-detector
+	•	填写 PR 描述（做了什么、影响范围、测试情况）
+**step 5: Code Review**
+至少1人review：
+	•	是否改了不该改的模块？
+	•	是否破坏数据结构？
+	•	是否能跑通 replay？
+	•	是否附带指标或截图？
+**step 6：合并PR**
+	•	✅ Squash and merge
+**step 7： 删除分支**
+```git branch -d feat/tl-detector # 删除本地
+git push origin --delete feat/tl-detector  # 删除远程
+```
 ⸻
 
 # 4. 代码结构规范
