@@ -117,6 +117,31 @@ git add .
 git commit -m "feat(tl): add red light detection
 ```
 ⚠️请务必按照规范commit，便于项目维护，可以coding过程中进行多次commit
+commit标准格式：
+<type>(<scope>): <short description>
+## 1️⃣ type 类型
+
+| 类型     | 用途       |
+|----------|------------|
+| feat     | 新功能     |
+| fix      | 修复 bug   |
+| refactor | 重构       |
+| docs     | 文档       |
+| test     | 测试       |
+| perf     | 性能优化   |
+| chore    | 杂项修改   |
+## 2️⃣ scope 范围
+
+| scope 示例 | 说明 |
+|------------|------|
+| tl         | 交通灯相关 |
+| ts         | 交通标志相关 |
+| core       | 核心模块 |
+| sync       | 同步模块 |
+| projector  | 投影模块 |
+| stabilizer | 稳定器模块 |
+| publisher  | 发布模块 |
+| visualizer | 可视化模块 |
 
 **step 3： 推送到远程**
 ```
