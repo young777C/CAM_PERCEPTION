@@ -108,29 +108,39 @@ git pull
 feat/tl-detector
 feat/ts-small-object
 feat/core-roi-refactor
-fix/sync-timestamp```
+fix/sync-timestamp
+```
 **step 2：本地开发**
 修改代码后：
-```git add .
-git commit -m "feat(tl): add red light detection"```
+```
+git add .
+git commit -m "feat(tl): add red light detection
+```
 ⚠️请务必按照规范commit，便于项目维护，可以coding过程中进行多次commit
+
 **step 3： 推送到远程**
-```git push origin feat/tl-detector```
+```
+git push origin feat/tl-detector
+```
 **step 4: 在GitHub上发起Pull Request**
 在 GitHub 页面：
 	•	base 分支：main
 	•	compare 分支：feat/tl-detector
 	•	填写 PR 描述（做了什么、影响范围、测试情况）
+	
 **step 5: Code Review**
 至少1人review：
 	•	是否改了不该改的模块？
 	•	是否破坏数据结构？
 	•	是否能跑通 replay？
 	•	是否附带指标或截图？
+	
 **step 6：合并PR**
 	•	✅ Squash and merge
+	
 **step 7： 删除分支**
-```git branch -d feat/tl-detector # 删除本地
+```
+git branch -d feat/tl-detector # 删除本地
 git push origin --delete feat/tl-detector  # 删除远程
 ```
 ⸻
