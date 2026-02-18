@@ -1,8 +1,85 @@
+########################################
+# 1) Python
+########################################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.log
 
-# outputs
+########################################
+# 2) Virtualenv / Conda
+########################################
+.venv/
+venv/
+env/
+.conda/
+conda-bld/
+
+########################################
+# 3) IDE / Editor
+########################################
+.vscode/
+.idea/
+*.iml
+
+########################################
+# 4) OS / Misc
+########################################
+.DS_Store
+Thumbs.db
+
+########################################
+# 5) Project outputs (DO NOT COMMIT)
+########################################
 logs/**
 !logs/**/.gitkeep
 
-# python
-__pycache__/
-*.pyc
+# If you also have temp outputs
+tmp/
+cache/
+outputs/
+
+########################################
+# 6) Large datasets (DO NOT COMMIT)
+########################################
+data/raw/
+data/datasets/
+data/replay/
+data/recordings/
+
+########################################
+# 7) Keep small sample dataset for CI smoke test
+########################################
+!data/samples/
+!data/samples/**
+
+########################################
+# 8) Model weights / engines (usually large)
+########################################
+*.onnx
+*.engine
+*.plan
+*.pt
+*.pth
+*.ckpt
+*.tflite
+*.trt
+weights/
+models_cache/
+
+########################################
+# 9) ROS / bags (if applicable)
+########################################
+*.bag
+*.db3
+rosbags/
