@@ -9,7 +9,7 @@ FRAMES="${2:-20}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-
+export PYTHONPATH="$ROOT/src:${PYTHONPATH:-}"
 echo "[run_replay] repo_root=$ROOT"
 echo "[run_replay] replay_root=$REPLAY_ROOT"
 echo "[run_replay] frames=$FRAMES"
@@ -40,7 +40,7 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 # todo：客制化
 CMD=(
-  "$PYTHON_BIN"  "-m" "src/perception_stack/main.py"
+  "$PYTHON_BIN"  "-m" "perception_stack.main"
   "--mode" "replay"
   "--replay_root" "$REPLAY_ROOT"
   "--frames" "$FRAMES"
