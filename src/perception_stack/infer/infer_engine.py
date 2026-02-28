@@ -1,24 +1,40 @@
-from __future__ import annotations
-from typing import Tuple
-import numpy as np
+from typing import Dict, Any, List
+from perception_stack.common.types import CameraFrame, Detection2D
+from perception_stack.infer.detectors.traffic_light import TrafficLightDetector
+from perception_stack.infer.detectors.traffic_sign import TrafficSignDetector
+
+
+TASK_REGISTRY = {
+    "traffic_light": TrafficLightDetector,
+    "traffic_sign": TrafficSignDetector,
+}
+
 
 class InferEngine:
-    """
-    分类/检测推理（TensorRT/ONNXRuntime/NN加速）
-    先给占位：输入 ROI patch，输出 (class_id, conf)
-    """
-    def __init__(self):
-        self.classes = ["vehicle", "pedestrian", "bicycle", "cone", "barrier", "unknown"]
+    def __init__(self, cfg: Dict[str, Any] | None = None):
+        if cfg is None:
+            cfg = {
+                "enabled_tasks": ["traffic_light", "traffic_sign"],
+                "tasks": {}
+            }
 
-    def infer_roi(self, roi_bgr: np.ndarray) -> Tuple[str, float]:
-        h, w = roi_bgr.shape[:2]
-        # 占位逻辑：面积/长宽比做个假判断
-        area = h * w
-        ratio = w / max(1, h)
-        if area > 70000:
-            return "vehicle", 0.65
-        if area < 6000:
-            return "cone", 0.55
-        if 0.3 < ratio < 0.8:
-            return "pedestrian", 0.6
-        return "unknown", 0.4
+        self.enabled_tasks = cfg.get("enabled_tasks", [])
+        self.detectors = {}
+
+        for task in self.enabled_tasks:
+            detector_cls = TASK_REGISTRY[task]
+            self.detectors[task] = detector_cls(
+                cfg.get("tasks", {}).get(task, {})
+            )
+
+    def run(self, frame: CameraFrame) -> Dict[str, List[Detection2D]]:
+        outputs = {}
+        for task, detector in self.detectors.items():
+            outputs[task] = detector.detect(frame)
+        return outputs
+
+    def run_flat(self, frame: CameraFrame) -> List[Detection2D]:
+        merged = []
+        for detector in self.detectors.values():
+            merged.extend(detector.detect(frame))
+        return merged
