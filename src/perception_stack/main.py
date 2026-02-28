@@ -7,6 +7,7 @@ from perception_stack.tracker.tracker2d import Tracker2D
 from perception_stack.stabilizer.stabilizer import Stabilizer
 from perception_stack.publisher.publisher import Publisher
 from perception_stack.visualizer.visualizer import Visualizer
+from perception_stack.infer.infer_engine import InferEngine
 
 
 def fake_frame(stamp_ms: int, w=1280, h=720) -> CameraFrame:
@@ -22,6 +23,7 @@ def fake_detections(cam_id: str):
 
 
 def main():
+    infer = InferEngine()
     tracker = Tracker2D()
     stab = Stabilizer(window_len=10, switch_k=3, min_stable_conf=0.6)
     pub = Publisher()
@@ -32,6 +34,7 @@ def main():
         cam = fake_frame(now)
 
         detections = fake_detections(cam.header.frame_id)
+        detections = infer.run_flat(cam)   
         tracks = tracker.update(detections, now)
 
         semantic_list = []
