@@ -16,7 +16,7 @@ class Publisher:
         self.out_dir = (
             out_dir
             or os.getenv("PERCEPTION_OUT_DIR")
-            or os.path.join(os.getcwd(), "logs")
+            or os.path.join(os.getcwd(), "logs", "metrics")
         )
         os.makedirs(self.out_dir, exist_ok=True)
 
