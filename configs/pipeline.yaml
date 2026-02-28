@@ -1,0 +1,12 @@
+# Pipeline switches (CORE)
+enabled_tasks:
+  - traffic_light
+  - traffic_sign
+
+tasks:
+  traffic_light:
+    conf_thres: 0.3
+    # model_path: "models/tl.onnx"
+  traffic_sign:
+    conf_thres: 0.3
+    # model_path: "models/ts.onnx"

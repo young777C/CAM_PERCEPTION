@@ -12,20 +12,17 @@ TASK_REGISTRY = {
 
 class InferEngine:
     def __init__(self, cfg: Dict[str, Any] | None = None):
-        if cfg is None:
-            cfg = {
-                "enabled_tasks": ["traffic_light", "traffic_sign"],
-                "tasks": {}
-            }
+        cfg = cfg or {}
+        self.cfg = cfg
 
-        self.enabled_tasks = cfg.get("enabled_tasks", [])
+        self.enabled_tasks = cfg.get("enabled_tasks", ["traffic_light", "traffic_sign"])
+        task_cfgs = cfg.get("task", {})
+
         self.detectors = {}
 
         for task in self.enabled_tasks:
             detector_cls = TASK_REGISTRY[task]
-            self.detectors[task] = detector_cls(
-                cfg.get("tasks", {}).get(task, {})
-            )
+            self.detectors[task] = detector_cls(task_cfgs.get(task, {}))
 
     def run(self, frame: CameraFrame) -> Dict[str, List[Detection2D]]:
         outputs = {}
