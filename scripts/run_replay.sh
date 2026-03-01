@@ -55,10 +55,23 @@ echo "[run_replay] cmd: ${CMD[*]}"
 # -----------------------------
 # Basic sanity checks
 # -----------------------------
-echo "[run_replay] outputs:"
-echo "  overlay_count=$(ls -1 logs/overlay 2>/dev/null | wc -l || true)"
-echo "  metrics_count=$(ls -1 logs/metrics 2>/dev/null | wc -l || true)"
+# Count only real files (exclude .gitkeep)
+overlay_count=$(find logs/overlay -maxdepth 1 -type f ! -name ".gitkeep" | wc -l || true)
+metrics_count=$(find logs/metrics -maxdepth 1 -type f ! -name ".gitkeep" | wc -l || true)
 
+echo "[run_replay] outputs:"
+echo "  overlay_count=$overlay_count"
+echo "  metrics_count=$metrics_count"
+
+if [ "$overlay_count" -lt 1 ]; then
+  echo "[run_replay] ERROR: no overlay generated"
+  exit 1
+fi
+
+if [ "$metrics_count" -lt 1 ]; then
+  echo "[run_replay] ERROR: no metrics json generated"
+  exit 1
+fi
 # You can tighten these once visualizer/publisher are implemented:
 # e.g. require at least 1 overlay image and 1 metrics file.
 exit 0
