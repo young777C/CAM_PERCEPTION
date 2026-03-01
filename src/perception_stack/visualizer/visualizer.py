@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 from typing import List
-from perception_stack.common.types import CameraFrame, SemanticObject
+from perception_stack.common.types import CameraFrame, SemanticObjectBase
 
 class Visualizer:
     """
@@ -20,7 +20,7 @@ class Visualizer:
         self.out_dir = os.path.join(base, "overlay")
         os.makedirs(self.out_dir, exist_ok=True)
 
-    def draw(self, frame: CameraFrame, objects: List[SemanticObject], dt_ms: int) -> str:
+    def draw(self, frame: CameraFrame, objects: List[SemanticObjectBase], dt_ms: int) -> str:
         img = frame.image_bgr.copy()
         cv2.putText(img, f"stamp={frame.header.stamp_ms} dt={dt_ms}ms", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
