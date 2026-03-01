@@ -5,6 +5,8 @@ set -euo pipefail
 # Defaults (can be overridden)
 # -----------------------------
 REPLAY_ROOT="${1:-data/samples/replay_min}"
+CONFIG_PATH="${3:-configs/pipeline.yaml}"
+echo "[run_replay] config=$CONFIG_PATH"
 FRAMES="${2:-20}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -44,6 +46,7 @@ CMD=(
   "--mode" "replay"
   "--replay_root" "$REPLAY_ROOT"
   "--frames" "$FRAMES"
+  "--config" "$CONFIG_PATH"
 )
 
 echo "[run_replay] cmd: ${CMD[*]}"

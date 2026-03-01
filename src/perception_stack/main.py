@@ -1,6 +1,8 @@
 from __future__ import annotations
 import time
 import numpy as np
+import argparse
+from perception_stack.common.config import load_yaml
 
 from perception_stack.common.types import Header, CameraFrame, Detection2D, ROI2D, SemanticObject2D
 from perception_stack.tracker.tracker2d import Tracker2D
@@ -9,6 +11,13 @@ from perception_stack.publisher.publisher import Publisher
 from perception_stack.visualizer.visualizer import Visualizer
 from perception_stack.infer.infer_engine import InferEngine
 
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--mode", default="replay", choices=["replay", "fake"])
+    p.add_argument("--config", default="configs/pipeline.yaml")
+    p.add_argument("--replay_root", default="data/samples/replay_min")
+    p.add_argument("--frames", type=int, default=20)
+    return p.parse_args()
 
 def fake_frame(stamp_ms: int, w=1280, h=720) -> CameraFrame:
     img = np.zeros((h, w, 3), dtype=np.uint8)
