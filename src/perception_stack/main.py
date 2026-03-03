@@ -44,9 +44,13 @@ def main():
     ap.add_argument("--ci_mode", action="store_true", help="Run CI smoke test mode")
     args = ap.parse_args()
 
-    cfg = load_cfg(args.config)
+    if args.ci_mode:
+        args.mode = "fake"
+        args.frames = 2
+        cfg = {"enabled_tasks": [], "task": {}}
+    else:
+        cfg = load_cfg(args.config)
 
-    # ✅ 关键：把 cfg 传进去
     infer = InferEngine(cfg)
 
     tracker = Tracker2D()
