@@ -2,6 +2,7 @@ from __future__ import annotations
 import time
 import numpy as np
 import argparse
+import yaml
 from perception_stack.common.config import load_yaml
 
 from perception_stack.common.types import Header, CameraFrame, Detection2D, ROI2D, SemanticObject2D
@@ -29,28 +30,47 @@ def fake_detections(cam_id: str):
         Detection2D(cam_id, ROI2D(200, 150, 80, 80), "traffic_light_red", 0.9),
         Detection2D(cam_id, ROI2D(500, 200, 100, 60), "speed_limit_80", 0.85),
     ]
-
+def load_cfg(path: str) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
+    return cfg
 
 def main():
-    infer = InferEngine()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--mode", default="replay")
+    ap.add_argument("--replay_root", default="data/samples/replay_min")
+    ap.add_argument("--frames", type=int, default=20)
+    ap.add_argument("--config", default="configs/pipeline.yaml")
+    ap.add_argument("--ci_mode", action="store_true", help="Run CI smoke test mode")
+    args = ap.parse_args()
+
+    if args.ci_mode:
+        args.mode = "fake"
+        args.frames = 2
+        cfg = {"enabled_tasks": [], "task": {}}
+    else:
+        cfg = load_cfg(args.config)
+
+    infer = InferEngine(cfg)
+
     tracker = Tracker2D()
     stab = Stabilizer(window_len=10, switch_k=3, min_stable_conf=0.6)
     pub = Publisher()
     vis = Visualizer()
 
-    for i in range(5):
+    # 这里先沿用你原来的循环逻辑；如果你项目有真实 replay loader，
+    # 后续再把 fake_frame 换成从 args.replay_root 读取帧即可
+    for i in range(args.frames):
         now = int(time.time() * 1000)
         cam = fake_frame(now)
 
-        detections = fake_detections(cam.header.frame_id)
-        detections = infer.run_flat(cam)   
+        # detections = fake_detections(cam.header.frame_id)  # 可保留作对照
+        detections = infer.run_flat(cam)
         tracks = tracker.update(detections, now)
 
         semantic_list = []
-
         for t in tracks:
             stable_cls, stable_conf, suppressed = stab.update(t.track_id, t.class_id, t.score)
-
             semantic_list.append(
                 SemanticObject2D(
                     track_id=t.track_id,
