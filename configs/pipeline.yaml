@@ -3,10 +3,12 @@ enabled_tasks:
   - traffic_light
   - traffic_sign
 
-tasks:
+task:
   traffic_light:
     conf_thres: 0.3
     # model_path: "models/tl.onnx"
   traffic_sign:
-    conf_thres: 0.3
-    # model_path: "models/ts.onnx"
+    model_path: "models/ts.onnx"
+    input_size: [640, 640]
+    threshold: 0.4
+    device: "cuda"

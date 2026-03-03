@@ -61,8 +61,9 @@ class TrafficSignDetector(DetectorBase):
             raise ValueError("traffic_sign.model_path is required in config")
 
         import onnxruntime as ort
+        available = ort.get_available_providers()
         providers = ["CPUExecutionProvider"]
-        if self.device.lower() in ["cuda", "gpu"]:
+        if self.device.lower() in ["cuda", "gpu"] and "CUDAExecutionProvider" in available:
             providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
         self.sess = ort.InferenceSession(self.model_path, providers=providers)
         self.in_name = self.sess.get_inputs()[0].name
@@ -71,8 +72,9 @@ class TrafficSignDetector(DetectorBase):
         # TODO：你需要填：class_id -> (type, value)
         # value 没有就填 -1
         self.id2attr: Dict[int, Tuple[str, int]] = {
-            0: ("unknown", -1),
-            # 例如： 3: ("speed_limit", 80),
+            0: ("warning", -1),
+            1: ("prohibitory", -1),
+            2: ("mandatory", -1),
         }
 
     def _decode_ultralytics(self, out: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -167,7 +169,7 @@ class TrafficSignDetector(DetectorBase):
 
             dets.append(
                 Detection2D(
-                    cam_id=frame.header.frame_id,
+                    cam_id = getattr(frame, "cam_id", None) or getattr(frame.header, "frame_id", "camera"),
                     roi=ROI2D(x=x1, y=y1, w=x2 - x1, h=y2 - y1),
                     class_id=cls_name,
                     score=float(s),
