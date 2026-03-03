@@ -12,6 +12,7 @@ class TrafficLightDetector(DetectorBase):
     def __init__(self, cfg):
         super().__init__(cfg)
         # 从配置中读取参数
+        self.task = str(cfg.get("task", "detect"))
         self.model_path = cfg.get("model_path")
         if not self.model_path:
             raise ValueError("traffic_light.model_path is required in config")
@@ -23,7 +24,7 @@ class TrafficLightDetector(DetectorBase):
         self.verbose = bool(cfg.get("verbose", False))
 
         # 加载 YOLO 模型（只在初始化时加载一次）
-        self.model = YOLO(self.model_path)
+        self.model = YOLO(self.model_path, task=self.task)
 
     def detect(self, frame: CameraFrame) -> List[Detection2D]:
         """

@@ -5,8 +5,14 @@ enabled_tasks:
 
 task:
   traffic_light:
-    conf_thres: 0.3
-    # model_path: "models/tl.onnx"
+    task: detect                             # 任务'task=detect', 'segment', 'classify','pose' or 'obb'（用于初始化时加载YOLO模型）
+    model_path: models/tl.onnx               # 模型文件路径（支持 .pt, .onnx 等格式）
+    threshold: 0.3                           # conf: 置信度阈值，低于此值的检测将被忽略
+    iou: 0.7                                 # 用于非极大值抑制（NMS）的阈值
+    input_size: [ 640, 640 ]                 # imgsz: 输入图像尺寸，可设为整数或 [h, w]
+    device: cpu                              # 推理设备: 'cpu', 'cuda:0' 等
+    save: False                              # 是否保存结果文件
+    verbose: False                           # 终端中是否显示详细的推理日志
   traffic_sign:
     model_path: "models/ts.onnx"
     input_size: [640, 640]
