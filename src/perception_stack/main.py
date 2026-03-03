@@ -41,6 +41,7 @@ def main():
     ap.add_argument("--replay_root", default="data/samples/replay_min")
     ap.add_argument("--frames", type=int, default=20)
     ap.add_argument("--config", default="configs/pipeline.yaml")
+    ap.add_argument("--ci_mode", action="store_true", help="Run CI smoke test mode")
     args = ap.parse_args()
 
     cfg = load_cfg(args.config)
