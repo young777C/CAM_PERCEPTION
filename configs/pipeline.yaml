@@ -12,7 +12,7 @@ task:
     device: "${models.traffic_light.device}"
 
   traffic_sign:
-    model_path: "models/ts.onnx"
+    model_path: "models/yolo11s.pt"
     input_size: [640, 640]
-    threshold: 0.01  
+    threshold: 0.25  
     device: "cuda"

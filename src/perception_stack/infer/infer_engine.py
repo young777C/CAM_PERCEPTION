@@ -16,9 +16,12 @@ class InferEngine:
     def __init__(self, cfg: dict):
         self.cfg = cfg
         self.model_path = cfg.get("model_path", "models/yolo11s.pt")
-        self.device = cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self.load_model(self.model_path)
+        self.device = cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")                                                                                                                                                                                                                                                                                 
+        # self.model = self.load_model(self.model_path)
+        self.model = YOLO(cfg['task']['traffic_sign']['model_path'])
         print(f"Model loaded: {self.model.__class__.__name__}")
+        self.threshold = float(cfg.get("threshold", 0.25))
+        self.nms_iou = float(cfg.get("nms_iou", 0.5))
         self.enabled_tasks = cfg.get("enabled_tasks", ["traffic_light", "traffic_sign"])
         task_cfgs = cfg.get("task", {})
         self.detectors = {}

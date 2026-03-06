@@ -1,7 +1,6 @@
 from __future__ import annotations
 import os
 import cv2
-import numpy as np
 from typing import List
 from perception_stack.common.types import CameraFrame, SemanticObjectBase
 
@@ -29,7 +28,11 @@ class Visualizer:
             if o.roi2d is None:
                 continue
             x, y, w, h = o.roi2d.x, o.roi2d.y, o.roi2d.w, o.roi2d.h
-            cv2.rectangle(img, (x,y), (x+w, y+h), (255, 255, 0), 2)
+            # --- 修改区域: 转成整数，避免 cv2.rectangle 报错 ---
+            x, y, w, h = int(x), int(y), int(w), int(h)
+            if w <= 0 or h <= 0:
+                continue  # 避免无效框
+            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 255, 0), 2)
             label = f"id={o.track_id} {o.stable_class_id or o.class_id}:{(o.stable_conf or o.class_conf):.2f}"
             cv2.putText(img, label, (x, max(20, y-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,0), 2)
 
