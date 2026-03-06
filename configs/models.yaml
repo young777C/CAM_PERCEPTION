@@ -1,0 +1,12 @@
+# models.yaml
+traffic_light:
+  model_path: "models/tl.onnx"
+  input_size: [640, 640]
+  threshold: 0.3
+  device: "cuda"
+
+traffic_sign:
+  model_path: "models/ts.onnx"
+  input_size: [640, 640]
+  threshold: 0.4
+  device: "cuda"
