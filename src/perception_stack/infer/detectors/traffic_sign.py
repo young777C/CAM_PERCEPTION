@@ -1,12 +1,14 @@
-from __future__ import annotations
 from typing import List, Dict, Any, Tuple
 import numpy as np
 import cv2
-
+import onnxruntime as ort
 from perception_stack.common.types import CameraFrame, Detection2D, ROI2D
 from .base import DetectorBase
 
-def letterbox(img_bgr, new_shape=(640, 640), color=(114,114,114)):
+def letterbox(img_bgr, new_shape=(640, 640), color=(114, 114, 114)):
+    """
+    Resize and pad the image to the target shape while maintaining aspect ratio.
+    """
     h, w = img_bgr.shape[:2]
     nh, nw = new_shape
     r = min(nw / w, nh / h)
@@ -21,7 +23,9 @@ def letterbox(img_bgr, new_shape=(640, 640), color=(114,114,114)):
     return out, r, (left, top)
 
 def nms_xyxy(boxes, scores, iou_thres=0.5):
-    # boxes: [N,4] xyxy
+    """
+    Non-maximum suppression to eliminate redundant bounding boxes.
+    """
     x1, y1, x2, y2 = boxes.T
     areas = (x2 - x1 + 1e-6) * (y2 - y1 + 1e-6)
     order = scores.argsort()[::-1]
@@ -60,7 +64,7 @@ class TrafficSignDetector(DetectorBase):
         if not self.model_path:
             raise ValueError("traffic_sign.model_path is required in config")
 
-        import onnxruntime as ort
+        # Initialize ONNX runtime session
         available = ort.get_available_providers()
         providers = ["CPUExecutionProvider"]
         if self.device.lower() in ["cuda", "gpu"] and "CUDAExecutionProvider" in available:
@@ -69,8 +73,7 @@ class TrafficSignDetector(DetectorBase):
         self.in_name = self.sess.get_inputs()[0].name
         self.out_names = [o.name for o in self.sess.get_outputs()]
 
-        # TODO：你需要填：class_id -> (type, value)
-        # value 没有就填 -1
+        # class_id -> (type, value) mapping
         self.id2attr: Dict[int, Tuple[str, int]] = {
             0: ("warning", -1),
             1: ("prohibitory", -1),
@@ -79,30 +82,19 @@ class TrafficSignDetector(DetectorBase):
 
     def _decode_ultralytics(self, out: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        return:
-          boxes_xywh: [N,4] (x,y,w,h) in input image pixel
-          conf: [N]
-          cls_id: [N]
+        Decode YOLOv5 output and return bounding boxes, confidence scores, and class ids.
         """
         pred = out
-        # 兼容 (1, C, N) / (1, N, C)
         if pred.ndim == 3:
             if pred.shape[1] < pred.shape[2]:
-                pred = np.transpose(pred, (0, 2, 1))  # (1,N,C)
+                pred = np.transpose(pred, (0, 2, 1))
             pred = pred[0]
-        else:
-            raise ValueError(f"unexpected output shape: {pred.shape}")
-
         C = pred.shape[1]
-        # 两种常见： [x,y,w,h,cls...](4+nc) 或 [x,y,w,h,obj,cls...](5+nc)
         if C < 6:
-            raise ValueError(f"too few channels: {C}")
-
+            raise ValueError(f"unexpected output shape: {pred.shape}")
         boxes = pred[:, :4]
         rest = pred[:, 4:]
-        if rest.shape[1] >= 2:  # 可能含 obj，也可能不含
-            # 尝试判断是否有 obj：如果 rest 第一维像 obj（0~1），效果上也能工作
-            # 这里用通用策略：假设第一列为 obj，再乘 cls_prob
+        if rest.shape[1] >= 2:
             obj = rest[:, 0]
             cls_prob = rest[:, 1:]
             cls_id = np.argmax(cls_prob, axis=1)
@@ -111,46 +103,44 @@ class TrafficSignDetector(DetectorBase):
         else:
             cls_id = np.zeros((boxes.shape[0],), dtype=np.int64)
             conf = rest[:, 0]
-
         return boxes, conf, cls_id.astype(np.int64)
 
     def detect(self, frame: CameraFrame) -> List[Detection2D]:
         img0 = frame.image_bgr
         ih, iw = img0.shape[:2]
 
-        # 1) preprocess (letterbox + BGR->RGB + CHW + float)
+        # Preprocess image
         img, r, (padw, padh) = letterbox(img0, self.input_size)
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         x = img_rgb.astype(np.float32) / 255.0
-        x = np.transpose(x, (2, 0, 1))[None, ...]  # 1x3xH xW
+        x = np.transpose(x, (2, 0, 1))[None, ...]
 
-        # 2) infer
+        # Inference
         outs = self.sess.run(self.out_names, {self.in_name: x})
         out0 = outs[0]
 
-        # 3) decode + threshold
+        # Decode predictions
         boxes_xywh, conf, cls_id = self._decode_ultralytics(out0)
         m = conf >= self.threshold
         boxes_xywh, conf, cls_id = boxes_xywh[m], conf[m], cls_id[m]
         if boxes_xywh.shape[0] == 0:
             return []
 
-        # xywh -> xyxy (in letterbox image space)
+        # Convert from xywh to xyxy
         xy = boxes_xywh[:, :2]
         wh = boxes_xywh[:, 2:4]
         x1y1 = xy - wh / 2
         x2y2 = xy + wh / 2
         boxes = np.concatenate([x1y1, x2y2], axis=1)
 
-        # NMS
+        # Apply NMS
         keep = nms_xyxy(boxes, conf, iou_thres=self.nms_iou)
         boxes, conf, cls_id = boxes[keep], conf[keep], cls_id[keep]
 
-        # 4) map back to original image
+        # Map back to original image
         dets: List[Detection2D] = []
         for b, s, c in zip(boxes, conf, cls_id):
             x1, y1, x2, y2 = b
-            # undo padding + scale
             x1 = (x1 - padw) / r
             y1 = (y1 - padh) / r
             x2 = (x2 - padw) / r
@@ -164,12 +154,11 @@ class TrafficSignDetector(DetectorBase):
                 continue
 
             ts_type, ts_value = self.id2attr.get(int(c), ("unknown", -1))
-            # 让 stabilizer 更好稳定：把识别结果放进 class_id
             cls_name = ts_type if ts_value < 0 else f"{ts_type}_{ts_value}"
 
             dets.append(
                 Detection2D(
-                    cam_id = getattr(frame, "cam_id", None) or getattr(frame.header, "frame_id", "camera"),
+                    cam_id=getattr(frame, "cam_id", None) or getattr(frame.header, "frame_id", "camera"),
                     roi=ROI2D(x=x1, y=y1, w=x2 - x1, h=y2 - y1),
                     class_id=cls_name,
                     score=float(s),
