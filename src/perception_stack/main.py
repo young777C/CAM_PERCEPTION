@@ -30,7 +30,7 @@ def load_cfg(path: str) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", default="replay", choices=["replay", "fake"])
-    ap.add_argument("--replay_root", default="data/CCTSDB/images")
+    ap.add_argument("--replay_root", default="data/samples/replay_min")
     ap.add_argument("--task", default="traffic_sign", choices=["traffic_light", "traffic_sign"])
     ap.add_argument("--frames", type=int, default=4)
     ap.add_argument("--config", default="configs/pipeline.yaml")
@@ -52,7 +52,7 @@ def main():
     pub = Publisher()
     vis = Visualizer()
 
-    test_dir = os.path.join(args.replay_root, "test")  # 你可以修改此路径为你的图片文件夹
+    test_dir = os.path.join(args.replay_root, "cam_test")  # 你可以修改此路径为你的图片文件夹
     image_files = [f for f in os.listdir(test_dir) if f.endswith('.png') or f.endswith('.jpg')]
 
     for i in range(args.frames):
