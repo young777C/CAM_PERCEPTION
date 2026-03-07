@@ -13,7 +13,7 @@ task:
 
   traffic_sign:
     # model_path: "models/yolo11s_ts.pt"
-    model_path: "models/best.onnx"
+    model_path: "models/ts.onnx"
     input_size: [640, 640]
     threshold: 0.25  
     device: "cuda"
