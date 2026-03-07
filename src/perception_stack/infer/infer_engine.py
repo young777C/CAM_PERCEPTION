@@ -3,11 +3,11 @@ import torch.onnx
 import numpy as np
 from perception_stack.common.types import CameraFrame, Detection2D
 from perception_stack.infer.detectors.traffic_light import TrafficLightDetector
-from perception_stack.infer.detectors.traffic_sign import TrafficSignDetector
+from perception_stack.infer.detectors.traffic_sign import TrafficSignDetector_PT, TrafficSignDetector_ONNX
 
 TASK_REGISTRY = {
     "traffic_light": TrafficLightDetector,
-    "traffic_sign": TrafficSignDetector,
+    "traffic_sign": TrafficSignDetector_ONNX,   # 根据模型保存的格式进行选择
 }
 
 from ultralytics import YOLO
