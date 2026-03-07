@@ -3,8 +3,10 @@ import time
 import numpy as np
 import argparse
 import yaml
-from perception_stack.common.config import load_yaml
+import os
+import cv2
 
+from perception_stack.common.config import load_yaml
 from perception_stack.common.types import Header, CameraFrame, Detection2D, ROI2D, SemanticObject2D
 from perception_stack.tracker.tracker2d import Tracker2D
 from perception_stack.stabilizer.stabilizer import Stabilizer
@@ -12,24 +14,14 @@ from perception_stack.publisher.publisher import Publisher
 from perception_stack.visualizer.visualizer import Visualizer
 from perception_stack.infer.infer_engine import InferEngine
 
-def parse_args():
-    p = argparse.ArgumentParser()
-    p.add_argument("--mode", default="replay", choices=["replay", "fake"])
-    p.add_argument("--config", default="configs/pipeline.yaml")
-    p.add_argument("--replay_root", default="data/samples/replay_min")
-    p.add_argument("--frames", type=int, default=20)
-    return p.parse_args()
-
-def fake_frame(stamp_ms: int, w=1280, h=720) -> CameraFrame:
-    img = np.zeros((h, w, 3), dtype=np.uint8)
+# 读取图像（实际图像）
+def real_frame(image_path: str) -> CameraFrame:
+    img = cv2.imread(image_path)  # 读取图像
+    if img is None:
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    stamp_ms = int(time.time() * 1000)  # 获取时间戳
     return CameraFrame(header=Header(stamp_ms=stamp_ms, frame_id="cam_front"), image_bgr=img)
 
-
-def fake_detections(cam_id: str):
-    return [
-        Detection2D(cam_id, ROI2D(200, 150, 80, 80), "traffic_light_red", 0.9),
-        Detection2D(cam_id, ROI2D(500, 200, 100, 60), "speed_limit_80", 0.85),
-    ]
 def load_cfg(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
@@ -37,19 +29,21 @@ def load_cfg(path: str) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", default="replay")
+    ap.add_argument("--mode", default="replay", choices=["replay", "fake"])
     ap.add_argument("--replay_root", default="data/samples/replay_min")
-    ap.add_argument("--frames", type=int, default=20)
+    ap.add_argument("--task", default="traffic_sign", choices=["traffic_light", "traffic_sign"])
+    ap.add_argument("--frames", type=int, default=4)
     ap.add_argument("--config", default="configs/pipeline.yaml")
-    ap.add_argument("--ci_mode", action="store_true", help="Run CI smoke test mode")
     args = ap.parse_args()
 
-    if args.ci_mode:
-        args.mode = "fake"
-        args.frames = 2
-        cfg = {"enabled_tasks": [], "task": {}}
-    else:
-        cfg = load_cfg(args.config)
+    # 加载配置文件
+    cfg = load_cfg(args.config)
+    
+    # 根据任务选择对应的检测器
+    if args.task == "traffic_light":
+        cfg["enabled_tasks"] = ["traffic_light"]
+    elif args.task == "traffic_sign":
+        cfg["enabled_tasks"] = ["traffic_sign"]
 
     infer = InferEngine(cfg)
 
@@ -58,15 +52,19 @@ def main():
     pub = Publisher()
     vis = Visualizer()
 
-    # 这里先沿用你原来的循环逻辑；如果你项目有真实 replay loader，
-    # 后续再把 fake_frame 换成从 args.replay_root 读取帧即可
-    for i in range(args.frames):
-        now = int(time.time() * 1000)
-        cam = fake_frame(now)
+    test_dir = os.path.join(args.replay_root, "cam_test")  # 你可以修改此路径为你的图片文件夹
+    image_files = [f for f in os.listdir(test_dir) if f.endswith('.png') or f.endswith('.jpg')]
 
-        # detections = fake_detections(cam.header.frame_id)  # 可保留作对照
-        detections = infer.run_flat(cam)
-        tracks = tracker.update(detections, now)
+    for i in range(args.frames):
+        if i >= len(image_files):
+            break  # 超过文件数量时退出
+
+        image_path = os.path.join(test_dir, image_files[i])
+        cam = real_frame(image_path)  # 读取实际图像
+
+        # 使用推理引擎检测
+        detections = infer.run_flat(cam)  # 执行推理
+        tracks = tracker.update(detections, int(time.time() * 1000))
 
         semantic_list = []
         for t in tracks:
@@ -84,13 +82,13 @@ def main():
                 )
             )
 
+        # 发布推理结果
         status = {"fps": 30}
         json_path = pub.publish(cam.header.stamp_ms, semantic_list, status)
         overlay_path = vis.draw(cam, semantic_list, 0)
 
         print("wrote:", json_path, overlay_path)
         time.sleep(0.2)
-
 
 if __name__ == "__main__":
     main()
