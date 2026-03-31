@@ -1,4 +1,14 @@
 # pipeline.yaml
+# 车端实时采集（--mode live）；replay 模式可忽略
+capture:
+  device: 0                    # 整数索引或 "/dev/video0"
+  width: 1920
+  height: 1080
+  fps: 30
+  queue_size: 2
+  drop_policy: latest          # latest = 低延迟丢中间帧；fifo = 有界队列丢最旧
+  frame_id: cam_front
+
 enabled_tasks:
   - traffic_light
   - traffic_sign
