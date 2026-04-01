@@ -150,3 +150,5 @@ chmod +x scripts/run_live.sh   # 仅需首次
 - **回放脚本报错无 overlay**：确认 `cam_test` 下有图片，且 `--frames` 不超过图片数量。
 
 更多模型接入与 detector 职责边界见同目录下的 [TL_TS_MODEL_INTEGRATION_GUIDE.md](./TL_TS_MODEL_INTEGRATION_GUIDE.md)。
+
+通过 ROS 2 发布检测结果（`vision_msgs`）见 [ROS2_INTEGRATION.md](./ROS2_INTEGRATION.md)。

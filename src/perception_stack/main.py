@@ -1,17 +1,17 @@
 from __future__ import annotations
 import time
 import argparse
-import yaml
 import os
 import cv2
 
-from perception_stack.common.types import Header, CameraFrame, SemanticObject2D
+from perception_stack.common.types import Header, CameraFrame
 from perception_stack.tracker.tracker2d import Tracker2D
 from perception_stack.stabilizer.stabilizer import Stabilizer
 from perception_stack.publisher.publisher import Publisher
 from perception_stack.visualizer.visualizer import Visualizer
 from perception_stack.infer.infer_engine import InferEngine
 from perception_stack.capture.opencv_source import OpenCVThreadedCapture
+from perception_stack.pipeline import load_cfg, apply_task_flag, run_infer_pipeline
 
 
 def real_frame(image_path: str) -> CameraFrame:
@@ -22,12 +22,6 @@ def real_frame(image_path: str) -> CameraFrame:
     return CameraFrame(header=Header(stamp_ms=stamp_ms, frame_id="cam_front"), image_bgr=img)
 
 
-def load_cfg(path: str) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f) or {}
-    return cfg
-
-
 def _parse_camera_device(raw) -> int | str:
     if isinstance(raw, int):
         return raw
@@ -35,39 +29,6 @@ def _parse_camera_device(raw) -> int | str:
     if s.isdigit():
         return int(s)
     return s
-
-
-def _apply_task_flag(cfg: dict, task: str) -> None:
-    if task == "traffic_light":
-        cfg["enabled_tasks"] = ["traffic_light"]
-    elif task == "traffic_sign":
-        cfg["enabled_tasks"] = ["traffic_sign"]
-
-
-def _run_infer_pipeline(
-    cam: CameraFrame,
-    infer: InferEngine,
-    tracker: Tracker2D,
-    stab: Stabilizer,
-) -> list:
-    detections = infer.run_flat(cam)
-    tracks = tracker.update(detections, int(time.time() * 1000))
-    semantic_list = []
-    for t in tracks:
-        stable_cls, stable_conf, _suppressed = stab.update(t.track_id, t.class_id, t.score)
-        semantic_list.append(
-            SemanticObject2D(
-                track_id=t.track_id,
-                cam_id=t.cam_id,
-                class_id=t.class_id,
-                class_conf=float(t.score),
-                roi2d=t.roi,
-                stable_class_id=stable_cls,
-                stable_conf=float(stable_conf),
-                attributes=t.attrs,
-            )
-        )
-    return semantic_list
 
 
 def run_replay(args, cfg: dict) -> None:
@@ -85,7 +46,7 @@ def run_replay(args, cfg: dict) -> None:
             break
         image_path = os.path.join(test_dir, image_files[i])
         cam = real_frame(image_path)
-        semantic_list = _run_infer_pipeline(cam, infer, tracker, stab)
+        semantic_list = run_infer_pipeline(cam, infer, tracker, stab)
 
         proc_ms = int(time.time() * 1000)
         latency_ms = proc_ms - cam.header.stamp_ms
@@ -134,7 +95,7 @@ def run_live(args, cfg: dict) -> None:
                 continue
 
             t0 = time.perf_counter()
-            semantic_list = _run_infer_pipeline(cam, infer, tracker, stab)
+            semantic_list = run_infer_pipeline(cam, infer, tracker, stab)
             infer_ms = (time.perf_counter() - t0) * 1000.0
 
             now_ms = int(time.time() * 1000)
@@ -176,7 +137,7 @@ def main():
     args = ap.parse_args()
 
     cfg = load_cfg(args.config)
-    _apply_task_flag(cfg, args.task)
+    apply_task_flag(cfg, args.task)
 
     if args.mode == "live":
         run_live(args, cfg)

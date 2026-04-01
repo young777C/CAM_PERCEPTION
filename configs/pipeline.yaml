@@ -15,10 +15,12 @@ enabled_tasks:
 
 task:
   traffic_light:
-    model_path: "models/tl.onnx"
-    input_size: [640, 640]
-    threshold: 0.25
-    device: "cuda"
+    conf_thres: 0.3
+    model_path: "${models.traffic_light.model_path}"  # 引用 models.yaml 中的路径
+    input_size: "${models.traffic_light.input_size}"  # 引用 models.yaml 中的输入尺寸
+    threshold: "${models.traffic_light.threshold}"
+    device: "${models.traffic_light.device}"
+
   traffic_sign:
     # model_path: "models/yolo11s_ts.pt"
     model_path: "models/ts.onnx"
