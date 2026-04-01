@@ -1,14 +1,26 @@
 # pipeline.yaml
+# 车端实时采集（--mode live）；replay 模式可忽略
+capture:
+  device: 0                    # 整数索引或 "/dev/video0"
+  width: 1920
+  height: 1080
+  fps: 30
+  queue_size: 2
+  drop_policy: latest          # latest = 低延迟丢中间帧；fifo = 有界队列丢最旧
+  frame_id: cam_front
+
 enabled_tasks:
   - traffic_light
   - traffic_sign
 
 task:
   traffic_light:
-    model_path: "models/tl.onnx"
-    input_size: [640, 640]
-    threshold: 0.25
-    device: "cuda"
+    conf_thres: 0.3
+    model_path: "${models.traffic_light.model_path}"  # 引用 models.yaml 中的路径
+    input_size: "${models.traffic_light.input_size}"  # 引用 models.yaml 中的输入尺寸
+    threshold: "${models.traffic_light.threshold}"
+    device: "${models.traffic_light.device}"
+
   traffic_sign:
     # model_path: "models/yolo11s_ts.pt"
     model_path: "models/ts.onnx"

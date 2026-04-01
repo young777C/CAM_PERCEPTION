@@ -7,7 +7,7 @@ set -euo pipefail
 REPLAY_ROOT="data/samples/replay_min"
 FRAMES="20"
 CONFIG_PATH="configs/pipeline.yaml"
-TASK="traffic_light"  # 默认任务
+TASK="traffic_sign"  # 默认任务
 
 # 如果提供了第四个参数，就覆盖 TASK
 if [ $# -ge 1 ]; then
