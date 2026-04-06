@@ -1,5 +1,5 @@
 # 在 CAM_PERCEPTION 仓库中接入 ROS 2
-
+smile~
 说明如何编译 `ros2/src/cam_perception_bridge`、发布 **`vision_msgs/msg/Detection2DArray`**，以及让节点加载仓库内的 `perception_stack`（**WSL + Python 虚拟环境**与单机 Ubuntu 相同思路）。
 
 ---
@@ -11,6 +11,7 @@
 - 与离线推理**同一套** venv：`requirements.txt`（含 ONNX / PyTorch / ultralytics 等）。
 
 ---
+
 
 ## 2. 仓库布局
 
