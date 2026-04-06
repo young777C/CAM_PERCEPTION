@@ -1,0 +1,41 @@
+from __future__ import annotations
+import os
+import cv2
+from typing import List
+from perception_stack.common.types import CameraFrame, SemanticObjectBase
+
+class Visualizer:
+    """
+    overlay 与日志落盘
+    """
+    def __init__(self, out_dir: Optional[str] = None):
+        # 优先：显式参数 > 环境变量（可单独配）> 默认（当前目录/logs/overlay）
+        base = (
+            out_dir
+            or os.getenv("PERCEPTION_VIS_DIR")
+            or os.getenv("PERCEPTION_OUT_DIR")
+            or os.path.join(os.getcwd(), "logs")
+        )
+        self.out_dir = os.path.join(base, "overlay")
+        os.makedirs(self.out_dir, exist_ok=True)
+
+    def draw(self, frame: CameraFrame, objects: List[SemanticObjectBase], dt_ms: int) -> str:
+        img = frame.image_bgr.copy()
+        cv2.putText(img, f"stamp={frame.header.stamp_ms} dt={dt_ms}ms", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
+
+        for o in objects:
+            if o.roi2d is None:
+                continue
+            x, y, w, h = o.roi2d.x, o.roi2d.y, o.roi2d.w, o.roi2d.h
+            # --- 修改区域: 转成整数，避免 cv2.rectangle 报错 ---
+            x, y, w, h = int(x), int(y), int(w), int(h)
+            if w <= 0 or h <= 0:
+                continue  # 避免无效框
+            cv2.rectangle(img, (x, y), (x + w, y + h), (255, 255, 0), 2)
+            label = f"id={o.track_id} {o.stable_class_id or o.class_id}:{(o.stable_conf or o.class_conf):.2f}"
+            cv2.putText(img, label, (x, max(20, y-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,0), 2)
+
+        path = os.path.join(self.out_dir, f"overlay_{frame.header.stamp_ms}.jpg")
+        cv2.imwrite(path, img)
+        return path

@@ -1,0 +1,311 @@
+# Contributing Guide
+
+欢迎参与 L4 Camera 感知项目开发 🚗
+
+本仓库主要聚焦：
+- 交通灯识别（Traffic Light）
+- 交通标志识别（Traffic Sign）
+- 与 LiDAR 融合的语义赋能
+- 输出稳定、可复现、可服务于规划
+
+---
+
+# 1. 分支管理策略
+
+本项目采用：
+
+**Main + Feature + Release 模式（Trunk-Based Development）**
+
+## 1.1 永久分支
+
+### `main`
+- 永远保持“可运行、可回放、可发布”
+- 禁止直接 push
+- 仅通过 Pull Request 合入
+- CI 必须通过
+
+### `release/vX.Y`
+- 里程碑版本
+- 仅允许 bugfix 和必要参数更新
+- 用于实验复现 / 交付 / 演示
+
+---
+
+## 1.2 功能分支（短生命周期）
+
+命名规范：
+
+feat/tl-*
+feat/ts-*
+feat/core-*
+fix/*
+exp/*
+
+说明：
+
+| 分支类型 | 用途 |
+|----------|------|
+| feat/tl-* | 交通灯相关功能 |
+| feat/ts-* | 交通标志相关功能 |
+| feat/core-* | 框架、公共结构修改 |
+| fix/* | Bug 修复 |
+| exp/* | 实验性开发（不可直接合入 main） |
+
+---
+
+# 2. 开发流程
+
+## 2.1 创建功能分支
+
+```bash
+git checkout main
+git pull
+git checkout -b feat/tl-detector
+```
+## 2.2 开发完成后
+	•	本地运行：
+	•	run_replay.sh
+	•	确认 pipeline 可跑通
+	•	生成：
+	•	overlay
+	•	metrics
+
+然后发起 Pull Request。
+
+⸻
+
+# 3. Pull Request 规范
+
+每个 PR 必须满足：
+	•	✅ 代码能运行
+	•	✅ 不破坏现有数据结构
+	•	✅ 提供基础指标输出
+	•	✅ 可视化 overlay 正常
+	•	✅ 说明本次修改影响范围
+
+⸻
+
+## 3.1 PR 标题规范
+
+[TL] add traffic light stabilizer
+[TS] improve small object detection
+[CORE] refactor projector ROI
+[FIX] fix timestamp alignment bug
+
+## 3.2 完整PR流程
+**step 0： 保证主线最新**
+```
+git checkout main
+git pull
+```
+**step 1: 创建功能分支**
+⚠️不要再main上开发，输入以下命令可以查看当前所在分支
+```git branch --show-current```
+进入功能分支
+```git checkout -b feat/(对应功能)```
+命名规范示例：
+```
+feat/tl-detector
+feat/ts-small-object
+feat/core-roi-refactor
+fix/sync-timestamp
+```
+**step 2：本地开发**
+修改代码后：
+```
+git add .
+git commit -m "feat(tl): add red light detection
+```
+⚠️请务必按照规范commit，便于项目维护，可以coding过程中进行多次commit
+commit标准格式：
+<type>(<scope>): <short description>
+1️⃣ type 类型
+
+| 类型     | 用途       |
+|----------|------------|
+| feat     | 新功能     |
+| fix      | 修复 bug   |
+| refactor | 重构       |
+| docs     | 文档       |
+| test     | 测试       |
+| perf     | 性能优化   |
+| chore    | 杂项修改   |
+2️⃣ scope 范围
+| scope 示例 | 说明 |
+|------------|------|
+| tl         | 交通灯相关 |
+| ts         | 交通标志相关 |
+| core       | 核心模块 |
+| sync       | 同步模块 |
+| projector  | 投影模块 |
+| stabilizer | 稳定器模块 |
+| publisher  | 发布模块 |
+| visualizer | 可视化模块 |
+
+**step 3： 推送到远程**
+```
+git push origin feat/tl-detector
+```
+**step 4: 在GitHub上发起Pull Request**
+在 GitHub 页面：
+	•	base 分支：main
+	•	compare 分支：feat/tl-detector
+	•	填写 PR 描述（做了什么、影响范围、测试情况）
+	
+**step 5: Code Review**
+至少1人review：
+	•	是否改了不该改的模块？
+	•	是否破坏数据结构？
+	•	是否能跑通 replay？
+	•	是否附带指标或截图？
+	
+**step 6：合并PR**
+	•	✅ Squash and merge
+	
+**step 7： 删除分支**
+```
+git branch -d feat/tl-detector # 删除本地
+git push origin --delete feat/tl-detector  # 删除远程
+```
+⸻
+
+# 4. 代码结构规范
+
+## 4.1 不允许跨模块乱改
+	•	交通灯相关代码 → infer/detectors/traffic_light.py
+	•	交通标志相关代码 → infer/detectors/traffic_sign.py
+	•	稳定逻辑 → stabilizer/
+	•	数据结构 → common/
+	•	发布逻辑 → publisher/
+
+如需修改公共接口，必须：
+	•	新建 feat/core-* 分支
+	•	在 PR 描述中说明变更理由
+
+⸻
+
+# 5. 数据结构约束
+
+以下结构为标准输出协议，不可随意更改字段：
+	•	FrameBundle
+	•	RawDetections
+	•	StableTrafficLight
+	•	StableTrafficSign
+
+如需修改：
+	•	必须保证向后兼容
+	•	或同时更新 publisher 与 visualizer
+
+⸻
+
+# 6. 模型与配置管理
+	•	所有模型路径写入 configs/models/models.yaml
+	•	不允许硬编码模型路径
+	•	不允许在代码中写死阈值
+
+阈值统一写入：
+
+configs/pipeline.yaml
+
+
+⸻
+
+# 7. 指标与验收标准
+
+每个任务必须提供至少一个核心指标：
+
+交通灯
+	•	状态准确率
+	•	稳定延迟（帧数）
+	•	误检率
+
+交通标志
+	•	分类准确率
+	•	小目标召回率
+	•	限速解析准确率
+
+⸻
+
+# 8. 可视化要求
+
+PR 必须附带：
+	•	overlay 截图
+	•	或 replay 视频片段
+	•	或 metrics 文件
+
+⸻
+
+# 9. 禁止行为
+
+❌ 不允许直接向 main push
+❌ 不允许破坏输出协议
+❌ 不允许提交大体量模型权重
+❌ 不允许删除日志目录结构
+
+⸻
+
+# 10. 推荐开发节奏
+	•	Feature 分支建议 1~3 天内完成
+	•	小步提交，避免大 PR
+	•	每 2~4 周发布一个 release 版本
+
+⸻
+
+# 11. Commit Message 规范
+
+建议格式：
+
+type(scope): short description
+
+feat(tl): add state hysteresis filter
+fix(sync): correct timestamp offset
+refactor(core): simplify FrameBundle structure
+
+类型：
+	•	feat
+	•	fix
+	•	refactor
+	•	docs
+	•	test
+
+⸻
+
+# 12. 合并规则
+	•	至少 1 名 reviewer 通过
+	•	CI 通过
+	•	无冲突
+	•	PR 描述清晰
+
+⸻
+
+# 13. 版本发布流程
+	1.	从 main 切分支：
+
+git checkout -b release/v0.1
+
+
+	2.	更新版本号
+	3.	固定模型版本
+	4.	打 tag：
+
+git tag v0.1
+git push origin v0.1
+
+
+
+⸻
+
+# 14. 目标
+
+我们的目标是：
+
+主线永远稳定
+任务快速迭代
+输出可复现
+可直接服务于规划
+
+⸻
+
+感谢每一位贡献者 🙌
+
+---
