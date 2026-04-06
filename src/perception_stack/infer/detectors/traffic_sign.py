@@ -1,10 +1,14 @@
+from perception_stack.common.config import resolve_model_path
 from perception_stack.common.types import Detection2D, ROI2D
 from .base import DetectorBase
 from ultralytics import YOLO
 
 class TrafficSignDetector_PT:
     def __init__(self, cfg):
-        self.model = YOLO(cfg['model_path'])
+        mp = resolve_model_path(cfg.get("model_path"))
+        if not mp:
+            raise ValueError("traffic_sign.model_path is required in config")
+        self.model = YOLO(mp)
         self.conf_thres = cfg.get('threshold', 0.25)
     
     def detect(self, frame):
@@ -19,7 +23,10 @@ class TrafficSignDetector_PT:
     
 class TrafficSignDetector_ONNX:
     def __init__(self, cfg):
-        self.model = YOLO(cfg["model_path"])   # 这里可以是 best.pt 或 best.onnx
+        mp = resolve_model_path(cfg.get("model_path"))
+        if not mp:
+            raise ValueError("traffic_sign.model_path is required in config")
+        self.model = YOLO(mp)
         self.conf = float(cfg.get("threshold", 0.25))
         self.imgsz = cfg.get("imgsz", 640)
 

@@ -1,10 +1,6 @@
-<!-- 本段 package.xml 声明了 ROS2 包 cam_perception_bridge 的元数据及其依赖关系。
-它指定了包名、版本、描述、维护者、许可证，并明确了构建、运行和测试时所依赖的 ROS2 软件包（如 rclpy、vision_msgs 等）。
-此外，<export> 元素表明该包采用 ament_python 作为构建类型。整体作用是为 ROS2 构建系统提供 cam_perception_bridge 包的规范定义。 -->
-
-
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<!-- cam_perception_bridge：ROS2 包元数据；ament_python 构建 -->
 <package format="3">
   <name>cam_perception_bridge</name>
   <version>0.1.0</version>

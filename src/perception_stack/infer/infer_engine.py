@@ -10,16 +10,11 @@ TASK_REGISTRY = {
     "traffic_sign": TrafficSignDetector_ONNX,   # 根据模型保存的格式进行选择
 }
 
-from ultralytics import YOLO
-
 class InferEngine:
     def __init__(self, cfg: dict):
         self.cfg = cfg
         self.model_path = cfg.get("model_path", "models/yolo11s.pt")
-        self.device = cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")                                                                                                                                                                                                                                                                                 
-        # self.model = self.load_model(self.model_path)
-        self.model = YOLO(cfg['task']['traffic_sign']['model_path'])
-        print(f"Model loaded: {self.model.__class__.__name__}")
+        self.device = cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")
         self.threshold = float(cfg.get("threshold", 0.25))
         self.nms_iou = float(cfg.get("nms_iou", 0.5))
         self.enabled_tasks = cfg.get("enabled_tasks", ["traffic_light", "traffic_sign"])
@@ -33,8 +28,9 @@ class InferEngine:
         """
         加载 YOLOv5 模型并将其放置到正确的设备上
         """
-        # 使用 ultralytics 加载 YOLOv5 模型
-        model = YOLO(model_path)  # 加载训练好的模型
+        from ultralytics import YOLO
+
+        model = YOLO(model_path)
         model.to(self.device)  # 将模型放到指定设备（GPU 或 CPU）
         return model
 

@@ -12,6 +12,8 @@ from rclpy.node import Node
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import Pose, PoseWithCovariance, Quaternion
 from std_msgs.msg import Header
+
+
 from vision_msgs.msg import (
     BoundingBox2D,
     Detection2DArray,
@@ -21,6 +23,8 @@ from vision_msgs.msg import (
     Pose2D,
     Point2D,
 )
+
+
 
 
 def _repo_root_from_node_file() -> Path:
@@ -58,9 +62,10 @@ def _stamp_from_stamp_ms(stamp_ms: int) -> Time:
 
 
 def _identity_pose_with_covariance() -> PoseWithCovariance:
+    # ROS 2: PoseWithCovariance.pose 即为 geometry_msgs/Pose（无 .pose.pose）
     pwc = PoseWithCovariance()
-    pwc.pose.pose = Pose()
-    pwc.pose.pose.orientation = Quaternion(w=1.0)
+    pwc.pose = Pose()
+    pwc.pose.orientation = Quaternion(w=1.0)
     return pwc
 
 
@@ -112,7 +117,20 @@ def semantic_list_to_detection2d_array(
     return out
 
 
+
 class CamPerceptionBridgeNode(Node):
+    """
+    CamPerceptionBridgeNode 类是一个 ROS 2 节点，实现了相机感知管线的桥接功能。其主要功能包括：
+
+    1. 初始化感知相关参数（如相机、模型配置、任务类型、数据源等），并解析配置文件；
+    2. 负责摄像头或回放数据源的读取；
+    3. 调用感知推理引擎（如 traffic_sign、traffic_light 等任务）进行图片推理与目标检测；
+    4. 管理目标跟踪与稳定化处理，确保检测结果持续、准确；
+    5. 将感知推理的结果转换为 ROS 2 的 Detection2DArray 消息格式，并通过设定的话题发布给下游模块；
+    6. 支持重放模式以便于离线调试与回归测试。
+
+    通过该节点可以方便地实现多种相机输入的感知与检测模型的集成，并将其结果标准化输出给 ROS 生态的其他组件。
+    """
     def __init__(self) -> None:
         super().__init__("cam_perception_bridge")
 
@@ -129,12 +147,19 @@ class CamPerceptionBridgeNode(Node):
         root = self.get_parameter("cam_perception_root").get_parameter_value().string_value
         self._repo_root = _resolve_repo_root(root)
         _ensure_perception_stack_on_path(self._repo_root)
+        # 供 detectors 将相对 model_path 解析到仓库根（不依赖 cwd；与旧版 install 脚本兼容）
+        os.environ.setdefault("CAM_PERCEPTION_ROOT", str(self._repo_root))
 
         import cv2
 
-        from perception_stack.capture.opencv_source import OpenCVThreadedCapture
+        from perception_stack.capture.opencv_source import OpenCVThreadedCapture 
         from perception_stack.infer.infer_engine import InferEngine
-        from perception_stack.pipeline import apply_task_flag, load_cfg, run_infer_pipeline
+        from perception_stack.pipeline import (
+            apply_task_flag,
+            load_cfg,
+            resolve_repo_relative_model_paths,
+            run_infer_pipeline,
+        )
         from perception_stack.stabilizer.stabilizer import Stabilizer
         from perception_stack.tracker.tracker2d import Tracker2D
         from perception_stack.common.types import CameraFrame, Header as CamHeader
@@ -160,6 +185,7 @@ class CamPerceptionBridgeNode(Node):
 
         cfg = load_cfg(str(abs_cfg))
         apply_task_flag(cfg, task)
+        resolve_repo_relative_model_paths(cfg, self._repo_root)
 
         self._infer = InferEngine(cfg)
         self._tracker = Tracker2D()
@@ -214,7 +240,14 @@ class CamPerceptionBridgeNode(Node):
             period = 0.05
         self._timer = self.create_timer(period, self._on_timer)
 
+
     def _on_timer(self) -> None:
+            # on_timer方法是定时回调函数，每隔设定的周期（period）自动执行一次。它的主要作用是：
+            # 1. 从数据源（可为本地相册replay或摄像头live）读取一帧图像
+            # 2. 调用推理、跟踪和稳定相关的处理流水线得到检测结果（semantic_list）
+            # 3. 将推理结果转换为Detection2DArray消息，并通过ROS2话题发布出去
+            # 4. 统计已处理帧数，并定期打印发布信息
+            # 这样可以持续不断地把感知结果（如检测框）发送到下游模块，供其它节点使用
         if self._max_frames is not None and self._frame_count >= self._max_frames:
             return
 

@@ -2,6 +2,7 @@ from typing import List
 import numpy as np
 from ultralytics import YOLO
 
+from perception_stack.common.config import resolve_model_path
 from perception_stack.common.types import CameraFrame, Detection2D, ROI2D
 from .base import DetectorBase
 
@@ -13,7 +14,10 @@ class TrafficLightDetector(DetectorBase):
         super().__init__(cfg)
         # 从配置中读取参数
         self.task = str(cfg.get("task", "detect"))
-        self.model_path = cfg.get("model_path")
+        raw_path = cfg.get("model_path")
+        if not raw_path:
+            raise ValueError("traffic_light.model_path is required in config")
+        self.model_path = resolve_model_path(str(raw_path))
         if not self.model_path:
             raise ValueError("traffic_light.model_path is required in config")
         self.threshold = float(cfg.get("threshold", 0.3))

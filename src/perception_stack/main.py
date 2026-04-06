@@ -11,7 +11,13 @@ from perception_stack.publisher.publisher import Publisher
 from perception_stack.visualizer.visualizer import Visualizer
 from perception_stack.infer.infer_engine import InferEngine
 from perception_stack.capture.opencv_source import OpenCVThreadedCapture
-from perception_stack.pipeline import load_cfg, apply_task_flag, run_infer_pipeline
+from perception_stack.pipeline import (
+    apply_task_flag,
+    infer_repo_root_from_config_path,
+    load_cfg,
+    resolve_repo_relative_model_paths,
+    run_infer_pipeline,
+)
 
 
 def real_frame(image_path: str) -> CameraFrame:
@@ -138,6 +144,7 @@ def main():
 
     cfg = load_cfg(args.config)
     apply_task_flag(cfg, args.task)
+    resolve_repo_relative_model_paths(cfg, infer_repo_root_from_config_path(args.config))
 
     if args.mode == "live":
         run_live(args, cfg)
